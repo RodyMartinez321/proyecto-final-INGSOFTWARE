@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carrito | Portal de Pedidos</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.18), transparent 25%), radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.16), transparent 20%), linear-gradient(180deg, #ecfdf5 0%, #f8fafc 100%); color: #0f172a; }
+      a { color: inherit; text-decoration: none; }
+      .page { width: min(100%, 1180px); margin: 0 auto; padding: 24px; }
+      .topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; padding: 18px 22px; border-radius: 24px; background: rgba(255,255,255,0.78); backdrop-filter: blur(16px); box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08); }
+      .topbar h1 { margin: 0; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.04em; color: #055f54; }
+      .topbar nav a { background: #fff; border: 1px solid rgba(15,23,42,.08); padding: 0.75rem 1.2rem; border-radius: 999px; font-weight: 600; transition: transform .2s ease, box-shadow .2s ease; }
+      .topbar nav a:hover { transform: translateY(-1px); box-shadow: 0 12px 35px rgba(15,23,42,.12); }
+      .hero { display: grid; gap: 20px; grid-template-columns: 1.5fr 1fr; align-items: stretch; margin-bottom: 28px; }
+      .hero-card, .details-card, .summary-card { background: rgba(255,255,255,0.88); border: 1px solid rgba(15,23,42,.08); border-radius: 28px; padding: 28px; box-shadow: 0 24px 70px rgba(15,23,42,0.08); }
+      .hero-copy h2 { margin: 0 0 16px; font-size: clamp(2rem, 3vw, 3rem); line-height: 1.05; }
+      .hero-copy p { margin: 0; color: #475569; font-size: 1rem; line-height: 1.7; }
+      .hero-card span { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 18px; background: #ecfdf5; color: #047857; font-weight: 800; margin-bottom: 14px; }
+      .hero-card h3 { margin: 0; font-size: 1.25rem; font-weight: 700; }
+      .hero-card p { margin: 8px 0 0; color: #475569; }
+      .hero-card a { margin-top: 20px; display: inline-flex; padding: 0.9rem 1.4rem; border-radius: 999px; background: #0f766e; color: white; font-weight: 700; box-shadow: 0 18px 40px rgba(15,23,42,.12); }
+      .cart-panel { display: grid; gap: 24px; }
+      .cart-panel h2 { margin: 0 0 12px; font-size: 1.75rem; color: #0f172a; }
+      .cart-empty { display: grid; gap: 12px; padding: 40px; border-radius: 28px; background: #f8fafc; border: 1px dashed rgba(15,23,42,.2); text-align: center; }
+      .cart-empty strong { color: #0f172a; font-size: 1.1rem; }
+      .cart-empty p { margin: 0; color: #475569; }
+      .cart-list { display: grid; gap: 18px; }
+      .cart-item { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: center; padding: 22px; border-radius: 24px; background: white; border: 1px solid rgba(15,23,42,.08); }
+      .cart-item img { width: 100%; height: 100px; object-fit: cover; border-radius: 20px; }
+      .item-details { display: grid; gap: 10px; }
+      .item-details h3 { margin: 0; font-size: 1.05rem; }
+      .item-details p { margin: 0; color: #64748b; font-size: 0.95rem; }
+      .item-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .item-actions button, .checkout-button { border: none; cursor: pointer; border-radius: 999px; font-weight: 700; transition: transform .2s ease, background .2s ease; }
+      .item-actions button { background: #f1f5f9; color: #0f172a; padding: 0.75rem 1rem; }
+      .item-actions button:hover, .checkout-button:hover { transform: translateY(-1px); }
+      .item-actions .remove { color: #dc2626; background: #fee2e2; }
+      .summary-grid { display: grid; gap: 16px; }
+      .summary-row { display: flex; justify-content: space-between; color: #475569; }
+      .summary-row strong { color: #0f172a; }
+      .checkout-button { width: 100%; background: #10b981; color: white; padding: 1rem 1.2rem; }
+      .footer { margin-top: 32px; padding: 20px 24px; border-radius: 24px; background: rgba(255,255,255,0.85); border: 1px solid rgba(15,23,42,.08); text-align: center; color: #475569; }
+      @media (max-width: 840px) { .hero { grid-template-columns: 1fr; } .cart-item { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div>
+          <p style="margin:0;font-size:.9rem;text-transform:uppercase;letter-spacing:.18em;color:#059669;">Portal de Pedidos</p>
+          <h1 style="margin:4px 0 0;font-size:1.6rem;">Carrito de compras</h1>
+        </div>
+        <nav>
+          <a href="/">Volver a la tienda</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p style="margin:0;font-size:.9rem;text-transform:uppercase;letter-spacing:.24em;color:#0f766e;">Tu carrito separado</p>
+            <h2>Revisa tus productos guardados y administra tu pedido.</h2>
+            <p>Esta página muestra el carrito que guardas en el sitio. Puedes ajustar cantidades, eliminar artículos y ver el total antes de pagar.</p>
+          </div>
+          <div class="hero-card">
+            <span id="total-items">0</span>
+            <h3>Items añadidos</h3>
+            <p id="cart-message">Revisa tu carrito y prepárate para finalizar tu compra.</p>
+            <a href="/" style="margin-top:20px;">Seguir comprando</a>
+          </div>
+        </section>
+
+        <section class="cart-panel">
+          <div id="cart-container"></div>
+          <div class="summary-card" id="cart-summary"></div>
+        </section>
+      </main>
+
+      <footer class="footer">Tus productos se guardan localmente en el navegador. Si deseas, puedes continuar en la tienda y regresar aquí.</footer>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "caribesupply_cart";
+      let cart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+      const formatCurrency = (value) => new Intl.NumberFormat("es-DO", { style: "currency", currency: "USD" }).format(value);
+
+      function saveCart() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+      }
+
+      function updateCartSummary() {
+        const items = cart.reduce((sum, item) => sum + item.qty, 0);
+        document.getElementById("total-items").textContent = items;
+        document.getElementById("cart-message").textContent = items > 0 ? `Tienes ${items} artículo${items === 1 ? "" : "s"} en tu carrito.` : "Tu carrito está vacío. Regresa a la tienda para agregar productos.";
+      }
+
+      function renderCart() {
+        const container = document.getElementById("cart-container");
+        const summary = document.getElementById("cart-summary");
+        updateCartSummary();
+
+        if (!cart.length) {
+          container.innerHTML = `
+            <div class="cart-empty">
+              <strong>Carrito vacío</strong>
+              <p>No hay productos en tu carrito todavía.</p>
+              <a href="/" class="checkout-button" style="max-width:260px;margin:0 auto;">Ir a la tienda</a>
+            </div>
+          `;
+          summary.innerHTML = "";
+          return;
+        }
+
+        container.innerHTML = cart.map(item => `
+          <article class="cart-item">
+            <img src="${item.image}" alt="${item.title}" />
+            <div class="item-details">
+              <h3>${item.title}</h3>
+              <p>${item.category}</p>
+              <p><strong>${formatCurrency(item.price)}</strong> cada unidad</p>
+              <div class="item-actions">
+                <button onclick="changeQty('${item.id}', -1)">-</button>
+                <button style="width:48px;">${item.qty}</button>
+                <button onclick="changeQty('${item.id}', 1)">+</button>
+                <button class="remove" onclick="removeItem('${item.id}')">Eliminar</button>
+              </div>
+            </div>
+          </article>
+        `).join("");
+
+        const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+        const taxes = subtotal * 0.18;
+        const total = subtotal + taxes;
+
+        summary.innerHTML = `
+          <div style="display:grid;gap:16px;">
+            <div class="summary-row"><span>Subtotal</span><strong>${formatCurrency(subtotal)}</strong></div>
+            <div class="summary-row"><span>Impuestos (18%)</span><strong>${formatCurrency(taxes)}</strong></div>
+            <div class="summary-row" style="font-size:1.1rem;"><span>Total</span><strong>${formatCurrency(total)}</strong></div>
+            <button class="checkout-button" onclick="checkout()">Ir a pagar</button>
+            <button class="checkout-button" style="background:#ef4444;">Vaciar carrito</button>
+          </div>
+        `;
+
+        summary.querySelector(".checkout-button:last-child").addEventListener("click", clearCart);
+      }
+
+      function changeQty(id, delta) {
+        cart = cart.map(item => item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item);
+        saveCart();
+        renderCart();
+      }
+
+      function removeItem(id) {
+        cart = cart.filter(item => item.id !== id);
+        saveCart();
+        renderCart();
+      }
+
+      function clearCart() {
+        cart = [];
+        saveCart();
+        renderCart();
+      }
+
+      function checkout() {
+        alert("Formulario de checkout simulado. Continúa en la tienda para finalizar.");
+      }
+
+      renderCart();
+    </script>
+  </body>
+</html>

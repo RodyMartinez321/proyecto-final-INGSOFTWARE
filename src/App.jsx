@@ -19,6 +19,8 @@ const SAMPLE_PRODUCTS = [
 ];
 
 
+const USER_STORAGE_KEY = "caribesupply_user";
+
 const PROVINCIAS = [
   "Santo Domingo",
   "Santiago de los Caballeros",
@@ -44,7 +46,7 @@ function Header({ user, onLogout, cartCount }) {
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#checkout">Checkout</a>
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#apis">APIs</a>
           <div className="ml-4">
-            <button className="bg-white text-cyan-700 px-3 py-1 rounded-lg font-semibold" aria-label={`Carrito con ${cartCount} items`}>Carrito ({cartCount})</button>
+            <a href="/carrito.html" className="bg-white text-cyan-700 px-3 py-1 rounded-lg font-semibold inline-flex items-center" aria-label={`Ver carrito con ${cartCount} items`}>Carrito ({cartCount})</a>
           </div>
           <div>
             {user ? (
@@ -87,13 +89,13 @@ function Auth({ onLogin }) {
       return;
     }
     const user = { name: form.name, email: form.email };
-    localStorage.setItem("caribesupply_user", JSON.stringify(user));
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
     onLogin(user);
   }
 
   function handleLogin(e) {
     e.preventDefault();
-    const stored = JSON.parse(localStorage.getItem("clientes_user") || "null");
+    const stored = JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || "null");
     if (!stored || stored.email !== form.email) {
       setError("Usuario no encontrado. Regístrese antes.");
       liveRef.current && (liveRef.current.textContent = "Usuario no encontrado. Regístrese antes.");
@@ -442,13 +444,26 @@ function APIsPanel({ province }) {
 }
 
 export default function App() {
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("caribesupply_user") || "null"));
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || "null"));
+  const [route, setRoute] = useState(() => window.location.hash || "#home");
   const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem("caribesupply_cart") || "[]"));
   const [products] = useState(SAMPLE_PRODUCTS);
   const [selectedProvince, setSelectedProvince] = useState(PROVINCIAS[0]);
 
+  useEffect(() => {
+    const onHashChange = () => setRoute(window.location.hash || "#home");
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (route === "#auth" && user) {
+      window.location.hash = "#home";
+    }
+  }, [route, user]);
+
   useEffect(() => { localStorage.setItem("caribesupply_cart", JSON.stringify(cart)); }, [cart]);
-  useEffect(() => { localStorage.setItem("caribesupply_user", JSON.stringify(user)); }, [user]);
+  useEffect(() => { localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user)); }, [user]);
 
   function handleAdd(product) {
     setCart(prev => {
@@ -461,7 +476,7 @@ export default function App() {
   function handleRemove(id) { setCart(prev => prev.filter(p => p.id !== id)); }
   function handleUpdateQty(id, qty) { if (qty < 1) return; setCart(prev => prev.map(p => p.id === id ? { ...p, qty } : p)); }
   function handleClear() { setCart([]); }
-  function handleLogout() { setUser(null); localStorage.removeItem("caribesupply_user"); }
+  function handleLogout() { setUser(null); localStorage.removeItem(USER_STORAGE_KEY); }
 
   function handleCheckoutSubmit(data) {
     alert(`Pedido simulado creado para ${data.name}. Se enviará a ${data.address}, ${data.province}.`);
@@ -469,30 +484,62 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="app-shell min-h-screen text-slate-800">
       <Header user={user} onLogout={handleLogout} cartCount={cart.reduce((s, i) => s + i.qty, 0)} />
       <main className="py-6">
         <div className="max-w-6xl mx-auto px-4">
-          {!user && <Auth onLogin={setUser} />}
-          <Catalog products={products} onAdd={handleAdd} />
-          <section className="max-w-6xl mx-auto p-6 mt-6 grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <CheckoutForm onSubmit={handleCheckoutSubmit} />
-            </div>
-            <div>
-              <Basket cart={cart} onRemove={handleRemove} onUpdateQty={handleUpdateQty} onClear={handleClear} />
-              <div className="mt-4 bg-white rounded shadow p-4">
-                <h4 className="font-semibold">Preferencias</h4>
-                <label className="block mt-2">
-                  <span className="text-sm">Provincia para APIs</span>
-                  <select value={selectedProvince} onChange={(e) => setSelectedProvince(e.target.value)} className="mt-1 block w-full p-2 rounded border-gray-300">
-                    {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </label>
-              </div>
-            </div>
-          </section>
-          <APIsPanel province={selectedProvince} />
+          {route === "#auth" && !user ? (
+            <section className="max-w-4xl mx-auto p-6 mt-6 bg-white rounded shadow">
+              <h2 className="text-2xl font-semibold mb-4">Ingresar a tu cuenta</h2>
+              <Auth onLogin={(userData) => {
+                setUser(userData);
+                window.location.hash = "#home";
+              }} />
+            </section>
+          ) : (
+            <>
+              <section className="rounded-[2rem] bg-white/75 backdrop-blur-md border border-white/80 shadow-2xl p-8 mb-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.25em] text-cyan-700">Tienda artesanal y natural</p>
+                    <h2 className="mt-3 text-3xl font-bold text-slate-900">Añade productos, completa tu compra y revisa tu carrito</h2>
+                    <p className="mt-3 max-w-2xl text-slate-700">Un fondo suave y un flujo de compra sencillo para tus productos locales.</p>
+                  </div>
+                  <div className="rounded-3xl bg-cyan-600 px-6 py-5 text-white shadow-lg">
+                    <p className="text-sm font-medium">Productos en carrito</p>
+                    <p className="mt-2 text-4xl font-bold">{cart.reduce((s, i) => s + i.qty, 0)}</p>
+                    <p className="text-sm opacity-90">items añadidos</p>
+                    <a href="/carrito.html" className="mt-4 inline-flex items-center justify-center rounded-full bg-white/90 px-4 py-2 text-cyan-700 font-semibold shadow-sm hover:bg-white">Abrir carrito</a>
+                  </div>
+                </div>
+              </section>
+              <Catalog products={products} onAdd={handleAdd} />
+              <section className="max-w-6xl mx-auto p-6 mt-6">
+                <div className="bg-white rounded-xl shadow p-6">
+                  <h3 className="text-xl font-semibold">El carrito ahora está en otra página</h3>
+                  <p className="mt-2 text-slate-600">Haz clic en el botón de carrito del menú para ver y editar tus productos.</p>
+                  <a href="/carrito.html" className="mt-4 inline-flex rounded-full bg-cyan-600 px-5 py-3 text-white font-semibold shadow hover:bg-cyan-700">Ver carrito completo</a>
+                </div>
+              </section>
+              <section className="max-w-6xl mx-auto p-6 mt-6 grid md:grid-cols-3 gap-6">
+                <div className="md:col-span-2">
+                  <CheckoutForm onSubmit={handleCheckoutSubmit} />
+                </div>
+                <div>
+                  <div className="mt-4 bg-white rounded shadow p-4">
+                    <h4 className="font-semibold">Preferencias</h4>
+                    <label className="block mt-2">
+                      <span className="text-sm">Provincia para APIs</span>
+                      <select value={selectedProvince} onChange={(e) => setSelectedProvince(e.target.value)} className="mt-1 block w-full p-2 rounded border-gray-300">
+                        {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </section>
+              <APIsPanel province={selectedProvince} />
+            </>
+          )}
         </div>
       </main>
       <footer className="bg-slate-800 text-white p-4 mt-8">
