@@ -583,7 +583,10 @@ export default function App() {
         </div>
       </main>
       <footer className="bg-slate-800 text-white p-4 mt-8">
-        <div className="max-w-6xl mx-auto text-sm">© {new Date().getFullYear()} Portal de Pedidos Online Donde Haras Tus Pedidos de Donde Quiera Que Te Encuentres.</div>
+        <div className="max-w-6xl mx-auto text-sm space-y-1">
+          <p>© {new Date().getFullYear()} Portal de Pedidos Online.</p>
+          <p>Autores: Rody Mathis (100581144) y Breilin de la Cruz (100616363).</p>
+        </div>
       </footer>
     </div>
   );
