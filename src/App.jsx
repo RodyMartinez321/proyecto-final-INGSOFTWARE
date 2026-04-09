@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 
 const SAMPLE_PRODUCTS = [
   { id: "P001", title: "Miel de Montaña 500g",            price: 8.5,   category: "Alimentos",         image: "/imagenes/miel-montana.jpg" },
@@ -36,7 +36,7 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat("es-DO", { style: "currency", currency: "USD" }).format(value);
 };
 
-function Header({ user, onLogout, cartCount }) {
+function Header({ user, onLogout, cartCount, cartButtonRef, cartPulse }) {
   return (
     <header className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white p-4 shadow-md">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -45,8 +45,9 @@ function Header({ user, onLogout, cartCount }) {
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#catalog">Catálogo</a>
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#checkout">Checkout</a>
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#apis">APIs</a>
+          <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="/facturas.html">Facturas</a>
           <div className="ml-4">
-            <a href="/carrito.html" className="bg-white text-cyan-700 px-3 py-1 rounded-lg font-semibold inline-flex items-center" aria-label={`Ver carrito con ${cartCount} items`}>Carrito ({cartCount})</a>
+            <a ref={cartButtonRef} href="/carrito.html" className={`bg-white text-cyan-700 px-3 py-1 rounded-lg font-semibold inline-flex items-center ${cartPulse ? 'cart-count-pulse' : ''}`} aria-label={`Ver carrito con ${cartCount} items`}>Carrito ({cartCount})</a>
           </div>
           <div>
             {user ? (
@@ -149,7 +150,7 @@ function ProductCard({ product, onAdd }) {
       <p className="text-sm text-gray-600">Categoría: {product.category}</p>
       <div className="mt-2 flex items-center justify-between">
         <strong>{formatCurrency(product.price)}</strong>
-        <button onClick={() => onAdd(product)} className="bg-cyan-600 text-white px-3 py-1 rounded focus:outline-none focus:ring-2 focus:ring-cyan-400" aria-label={`Agregar ${product.title} al carrito`}>Agregar</button>
+        <button onClick={(e) => onAdd(product, e.currentTarget.closest('article'))} className="bg-cyan-600 text-white px-3 py-1 rounded focus:outline-none focus:ring-2 focus:ring-cyan-400" aria-label={`Agregar ${product.title} al carrito`}>Agregar</button>
       </div>
     </article>
   );
@@ -449,6 +450,8 @@ export default function App() {
   const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem("caribesupply_cart") || "[]"));
   const [products] = useState(SAMPLE_PRODUCTS);
   const [selectedProvince, setSelectedProvince] = useState(PROVINCIAS[0]);
+  const [cartPulse, setCartPulse] = useState(false);
+  const cartButtonRef = useRef(null);
 
   useEffect(() => {
     const onHashChange = () => setRoute(window.location.hash || "#home");
@@ -465,12 +468,49 @@ export default function App() {
   useEffect(() => { localStorage.setItem("caribesupply_cart", JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user)); }, [user]);
 
-  function handleAdd(product) {
+  function animateAddToCart(sourceElement) {
+    if (!sourceElement || !cartButtonRef.current) return;
+    const image = sourceElement.querySelector("img");
+    if (!image) return;
+
+    const clone = image.cloneNode(true);
+    const imageRect = image.getBoundingClientRect();
+    const targetRect = cartButtonRef.current.getBoundingClientRect();
+
+    Object.assign(clone.style, {
+      position: "fixed",
+      top: `${imageRect.top}px`,
+      left: `${imageRect.left}px`,
+      width: `${imageRect.width}px`,
+      height: `${imageRect.height}px`,
+      borderRadius: "14px",
+      boxShadow: "0 20px 40px rgba(15,23,42,0.15)",
+      transition: "transform 0.8s ease, opacity 0.8s ease",
+      zIndex: 9999,
+      pointerEvents: "none",
+    });
+
+    document.body.appendChild(clone);
+
+    requestAnimationFrame(() => {
+      const deltaX = targetRect.left + targetRect.width / 2 - (imageRect.left + imageRect.width / 2);
+      const deltaY = targetRect.top + targetRect.height / 2 - (imageRect.top + imageRect.height / 2);
+      clone.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.18)`;
+      clone.style.opacity = "0.4";
+    });
+
+    clone.addEventListener("transitionend", () => clone.remove(), { once: true });
+  }
+
+  function handleAdd(product, cardElement) {
+    animateAddToCart(cardElement);
     setCart(prev => {
       const exists = prev.find(p => p.id === product.id);
       if (exists) return prev.map(p => p.id === product.id ? { ...p, qty: p.qty + 1 } : p);
       return [...prev, { ...product, qty: 1 }];
     });
+    setCartPulse(true);
+    window.setTimeout(() => setCartPulse(false), 420);
   }
 
   function handleRemove(id) { setCart(prev => prev.filter(p => p.id !== id)); }
@@ -485,7 +525,7 @@ export default function App() {
 
   return (
     <div className="app-shell min-h-screen text-slate-800">
-      <Header user={user} onLogout={handleLogout} cartCount={cart.reduce((s, i) => s + i.qty, 0)} />
+      <Header user={user} onLogout={handleLogout} cartCount={cart.reduce((s, i) => s + i.qty, 0)} cartButtonRef={cartButtonRef} cartPulse={cartPulse} />
       <main className="py-6">
         <div className="max-w-6xl mx-auto px-4">
           {route === "#auth" && !user ? (
