@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import mermaid from "mermaid";
 
 const SAMPLE_PRODUCTS = [
   { id: "P001", title: "Miel de Montaña 500g",            price: 8.5,   category: "Alimentos",         image: "/imagenes/miel-montana.jpg" },
@@ -45,6 +46,7 @@ function Header({ user, onLogout, cartCount, cartButtonRef, cartPulse }) {
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#catalog">Catálogo</a>
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#checkout">Checkout</a>
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#apis">APIs</a>
+          <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="#diagrams">Diagramas UML</a>
           <a className="underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-white rounded" href="/facturas.html">Facturas</a>
           <div className="ml-4">
             <a ref={cartButtonRef} href="/carrito.html" className={`bg-white text-cyan-700 px-3 py-1 rounded-lg font-semibold inline-flex items-center ${cartPulse ? 'cart-count-pulse' : ''}`} aria-label={`Ver carrito con ${cartCount} items`}>Carrito ({cartCount})</a>
@@ -444,6 +446,113 @@ function APIsPanel({ province }) {
   );
 }
 
+function MermaidDiagram({ chart, title }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "loose" });
+    mermaid.render(`diagram-${Math.random().toString(36).slice(2, 10)}`, chart)
+      .then(({ svg }) => {
+        if (ref.current) ref.current.innerHTML = svg;
+      })
+      .catch((error) => {
+        if (ref.current) ref.current.innerHTML = `<pre class='text-sm text-red-600'>${error.message}</pre>`;
+      });
+  }, [chart]);
+
+  return (
+    <div className="bg-white rounded-xl shadow p-6 border border-gray-100">
+      <h3 className="text-xl font-semibold text-cyan-700 mb-4">{title}</h3>
+      <div ref={ref} className="min-h-[320px] text-[0.95rem]" />
+    </div>
+  );
+}
+
+function DiagramsSection() {
+  const classDiagram = `
+classDiagram
+    class App {
+      +user
+      +cart
+      +handleAdd(product)
+      +handleRemove(id)
+      +handleUpdateQty(id, qty)
+      +handleCheckoutSubmit(data)
+    }
+    class Catalog {
+      +products
+      +query
+      +category
+      +onAdd(product)
+    }
+    class Basket {
+      +cart
+      +onRemove(id)
+      +onUpdateQty(id, qty)
+      +onClear()
+    }
+    class CheckoutForm {
+      +form
+      +errors
+      +validate()
+      +handleSubmit()
+    }
+    class APIsPanel {
+      +province
+      +weather
+      +rates
+      +tracking
+      +faqs
+    }
+    App --> Catalog
+    App --> Basket
+    App --> CheckoutForm
+    App --> APIsPanel
+    Catalog --> ProductCard
+    Basket --> CheckoutForm
+`;
+
+  const sequenceDiagram = `
+sequenceDiagram
+    participant U as Usuario
+    participant A as App
+    participant C as CheckoutForm
+    participant S as LocalStorage
+    U->>A: Agrega producto al carrito
+    A->>A: handleAdd(product)
+    A->>S: Guarda carrito actualizado
+    U->>C: Completa formulario de checkout
+    C->>C: validate()
+    C-->>A: onSubmit(data)
+    A->>A: handleCheckoutSubmit(data)
+    A->>S: Vacía carrito
+`;
+
+  const activityDiagram = `
+stateDiagram-v2
+    [*] --> RegistroIngreso
+    RegistroIngreso --> MostrarCatalogo : usuario autenticado
+    MostrarCatalogo --> AgregarAlCarrito : cliente añade producto
+    AgregarAlCarrito --> VerCarrito
+    VerCarrito --> Checkout
+    Checkout --> PagoSimulado
+    PagoSimulado --> [*]
+`;
+
+  return (
+    <section id="diagrams" className="max-w-6xl mx-auto p-6 mt-12" aria-labelledby="diagrams-title">
+      <h2 id="diagrams-title" className="text-2xl font-bold text-emerald-700 mb-8">Diagramas UML de Diseño</h2>
+      <p className="text-slate-600 mb-6">Esta sección muestra los diagramas UML que describen la estructura y la interacción principal del portal de pedidos.</p>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <MermaidDiagram title="Diagrama de Clases" chart={classDiagram} />
+        <MermaidDiagram title="Diagrama de Secuencia" chart={sequenceDiagram} />
+        <MermaidDiagram title="Diagrama de Actividad" chart={activityDiagram} />
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || "null"));
   const [route, setRoute] = useState(() => window.location.hash || "#home");
@@ -577,6 +686,7 @@ export default function App() {
                   </div>
                 </div>
               </section>
+              <DiagramsSection />
               <APIsPanel province={selectedProvince} />
             </>
           )}
